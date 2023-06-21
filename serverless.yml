@@ -1,0 +1,71 @@
+service: sqs-sns-nodejs-aws
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: dev
+  apiGateway:
+    apiKeys:
+      - name : xApiKey
+        value : 'f98d8cd98h73s204e3456998ecl9427j'
+
+
+plugins:
+  - serverless-offline-sqs
+  - serverless-offline  
+
+functions:
+  QueueSendMessage:
+    handler: handler.sendMessage
+    name: Queue-SendMessage-Lambda
+    description: to send sqs message
+    events:
+      - http:
+          method: POST
+          path: sender-queue
+          private: true
+
+  QueueReceiveMessage:
+    handler: handler.receiveMessage
+    name: Queue-ReceiveMessage-Lambda
+    description: to receive sqs message
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - myFirstQueue
+              - Arn
+          batchSize: 10  
+
+custom :
+  serverless-offline:
+    httpPort: 4000
+    lambdaPort: 4002
+    useChildProcesses: false
+  serverless-offline-sqs:
+    sqsHost: 127.0.0.1
+    sqsPort: 9324
+    autoCreate: false
+    apiVersion: "latest"
+    endpoint: http://127.0.0.1:9324
+    region: us-east-1
+    accessKeyId: local
+    secretAccessKey: local
+    skipCacheInvalidation: false      
+
+resources:
+  Resources:
+    myFirstQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: myFirstQueue
+        MessageRetentionPeriod: 1209600
+        RedrivePolicy:
+          deadLetterTargetArn:
+            Fn::GetAtt:
+              - myFirstQueue
+              - Arn
+          maxReceiveCount: 3
+        VisibilityTimeout: 10
