@@ -6,10 +6,15 @@ provider:
   name: aws
   runtime: nodejs18.x
   stage: dev
+  region: us-east-1
+  memorySize: 512
+  timeout: 10
+  environment: ${file(serverless_ssm.yml)}
   apiGateway:
     apiKeys:
       - name : xApiKey
-        value : 'f98d8cd98h73s204e3456998ecl9427j'
+        value : ${file(./serverless_ssm.yml):X_API_KEY}
+
 
 
 plugins:
@@ -41,31 +46,36 @@ functions:
 
 custom :
   serverless-offline:
-    httpPort: 4000
-    lambdaPort: 4002
-    useChildProcesses: false
-  serverless-offline-sqs:
-    sqsHost: 127.0.0.1
-    sqsPort: 9324
+    httpPort: ${file(./serverless_ssm.yml):SERVERLESS_HTTP_PORT}
+    lambdaPort: ${file(./serverless_ssm.yml):SERVERLESS_LAMBDA_PORT}
+  serverless-offline-sqs:  
+    sqsHost: ${file(./serverless_ssm.yml):SQS_HOST}
+    sqsPort: ${file(./serverless_ssm.yml):SQS_PORT}
     autoCreate: false
-    apiVersion: "latest"
-    endpoint: http://127.0.0.1:9324
-    region: us-east-1
-    accessKeyId: local
-    secretAccessKey: local
-    skipCacheInvalidation: false      
+    apiVersion: ${file(./serverless_ssm.yml):SQS_API_VERSION}
+    endpoint: ${file(./serverless_ssm.yml):SQS_URL}
+    region: ${file(./serverless_ssm.yml):AWS_REGION}
+    accessKeyId: ${file(./serverless_ssm.yml):AWS_ACCESS_KEY_RANDOM_VALUE}
+    secretAccessKey: ${file(./serverless_ssm.yml):AWS_SECRET_KEY_RANDOM_VALUE}
+    skipCacheInvalidation: false
+  serverless-offline-ssm:
+    stages:
+      - dev
+    ssm: 
+      ${file(./serverless_ssm.yml)}     
 
 resources:
   Resources:
     myFirstQueue:
       Type: AWS::SQS::Queue
       Properties:
-        QueueName: myFirstQueue
-        MessageRetentionPeriod: 1209600
+        QueueName: my-first-queue.fifo
+        MessageRetentionPeriod: 120
+        VisibilityTimeout: 10
+        FifoQueue: true
         RedrivePolicy:
           deadLetterTargetArn:
             Fn::GetAtt:
               - myFirstQueue
               - Arn
           maxReceiveCount: 3
-        VisibilityTimeout: 10

@@ -1,38 +1,52 @@
-module.exports.sendMessage = async (event) => {
-  const AWS = require("aws-sdk");
-  const SQS = new AWS.SQS({
-    accessKeyId: "local",
-    secretAccessKey: "local",
-    endpoint: "127.0.0.1:9324"
-  });
+//External
+const { SQSClient, SendMessageCommand } = require("@aws-sdk/client-sqs");
+const { v4: uuidv4 } = require('uuid');
+//Environment Vars
+const ACCESS_KEY = process.env.AWS_ACCESS_KEY_RANDOM_VALUE;
+const SECRET_KEY = process.env.AWS_SECRET_KEY_RANDOM_VALUE;
+const REGION = process.env.REGION;
+const ENDPOINT = process.env.SQS_URL;
+const QUEUE_URL = process.env.QUEUE_URL;
 
+module.exports.sendMessage = async (event) => {
   try {
 
-    const queueParams = {
-      Entries: [
-        {
-          Id: "1",
-          MessageBody: "this is a message body",
-        }
-      ],
-      QueueUrl: 'http://127.0.0.1:9324/queue/myFirstQueue'
-    }
+    let client = new SQSClient({
+      accessKeyId: ACCESS_KEY,
+      secretAccessKey: SECRET_KEY,
+      region: REGION,
+      endpoint: ENDPOINT,
+    });
 
-    const result = await SQS.sendMessageBatch(queueParams).promise();
+    let command = new SendMessageCommand({
+      QueueUrl: QUEUE_URL,
+      DelaySeconds: 0,
+      MessageDeduplicationId: uuidv4(),
+      MessageGroupId: uuidv4(),
+      MessageBody:
+        "information about sending the message",
+      MessageAttributes: {
+        JsonObject: {
+          DataType: "String",
+          StringValue: "Example for sender an object inside de MessageAttributes"
+      }
+      }
+    });
 
-    let bodyResponse = JSON.stringify(result, null, 2)
+    let response = await client.send(command);
 
-    console.log(bodyResponse);
-    if(result != null){
+    let bodyResponse = JSON.stringify(command, null, 2)
+
+    if (response != null) {
       return {
         statusCode: 200,
         body: bodyResponse
-          }
-    }else{
+          };
+    } else {
       return {
-        statusCode: 400,
-        body: 'Bad request'
-          }
+          statusCode: 400,
+          body: 'Bad request'
+            };
     }
     
   } catch (e) {
@@ -44,5 +58,9 @@ module.exports.sendMessage = async (event) => {
 
 
 module.exports.receiveMessage = async (event) => {
-  console.log(JSON.stringify(event.Records, null, 2));
+  try{
+    console.log(JSON.stringify(event.Records, null, 2));
+  }catch(e){
+console.log(e);
+  }
 };
