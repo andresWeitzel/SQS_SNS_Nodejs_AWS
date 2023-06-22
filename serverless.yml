@@ -22,6 +22,16 @@ plugins:
   - serverless-offline  
 
 functions:
+  SnsSubscribeSqs:
+    handler: handler.snsSubscribeSQS
+    name: Sns-Subscribe-Sqs-Lambda
+    description: to subscribe sqs queue
+    events:
+      - http:
+          method: POST
+          path: subscribe-sqs-queue
+          private: true
+
   QueueSendMessage:
     handler: handler.sendMessage
     name: Queue-SendMessage-Lambda
@@ -71,7 +81,7 @@ resources:
       Properties:
         QueueName: my-first-queue.fifo
         MessageRetentionPeriod: 120
-        VisibilityTimeout: 10
+        VisibilityTimeout: 30
         FifoQueue: true
         RedrivePolicy:
           deadLetterTargetArn:

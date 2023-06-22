@@ -13,7 +13,7 @@
   SQS_URL: 'http://127.0.0.1:9324'
 
   #QUEUE CONFIG
-  QUEUE_NAME : 'my-first-queue'
+  QUEUE_NAME : 'my-first-queue.fifo'
   QUEUE_URL: 'http://127.0.0.1:9324/queue/my-first-queue.fifo'
 
   # SERVERLESS CONFIG
